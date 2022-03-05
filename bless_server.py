@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import Optional, List
+from abc import ABC, abstractmethod
+from enum import Enum
 
 import sys
 import time
@@ -43,38 +45,83 @@ current_cmd = ""
 
 initial_stdin_state = termios.tcgetattr(stdin_no)
 
+class Key(ABC):
+    @abstractmethod
+    def to_num(self) -> int:
+        pass
 
-def read_ch() -> Optional[str]:
+class UnicodeKey(Key):
+    def __init__(self, ch: str):
+        self.ch = ch
+
+    def to_num(self) -> int:
+        return ord(self.ch)
+
+class Special(Enum):
+    BROKEN = 1
+
+    ESCAPE = 2
+    RETURN = 3
+    ARROW_UP = 101
+    ARROW_DOWN = 102
+    ARROW_LEFT = 103
+    ARROW_RIGHT = 104
+
+class SpecialKey(Key):
+    def __init__(self, special: Special):
+        self.special = special
+
+    def to_num(self) -> int:
+        return -self.special.value
+
+# Only blocks in case a partial UTF-8 codepoint is read, or a partial escape sequence
+def read_key() -> Optional[Key]:
     ch = b''
     while True:
         try:
             ch += os.read(stdin_no, 1)
-            if ch == b"\r":
-                ch = b"\n"
+            if ch in b"\r\n":
+                return SpecialKey(Special.RETURN)
             if ch == b'\x1a': # CTRL-Z, suspend
                 os.kill(bqn_pid, signal.SIGSTOP)
+            if ch == b'\x1b': # Escape code, need to parse stuff
+                try:
+                    next = os.read(stdin_no, 1)
+                    if next != b'[': # uh oh
+                        return SpecialKey(Special.BROKEN)
+                    next = os.read(stdin_no, 1)
+                    if next == b"A":
+                        return SpecialKey(Special.ARROW_UP)
+                    if next == b"B":
+                        return SpecialKey(Special.ARROW_DOWN)
+                    if next == b"C":
+                        return SpecialKey(Special.ARROW_RIGHT)
+                    if next == b"D":
+                        return SpecialKey(Special.ARROW_LEFT)
+                except BlockingIOError:
+                    return SpecialKey(Special.ESCAPE)
             try:
-                return ch.decode()
+                return UnicodeKey(ch.decode())
             except UnicodeDecodeError:
                 continue
         except BlockingIOError:
             return None
 
-def read_ch_blocking() -> str:
+def read_ch_blocking() -> Key:
     while True:
-        ch = read_ch()
+        ch = read_key()
         if ch is not None:
             return ch
 
-def read_until_end() -> str:
-    buf = ""
+def read_until_end() -> List[Key]:
+    buf: List[Key] = []
     while True:
-        ch = read_ch()
+        ch = read_key()
         if ch is None:
             return buf
-        buf += ch
+        buf.append(ch)
 
-in_buffer = ""
+in_buffer = []
 
 try:
     while True:
@@ -129,7 +176,7 @@ try:
                 else:
                     proc = subprocess.Popen(["stty", "-F", stdin_file, "size"], stdout=subprocess.PIPE)
 
-                size_st, _ = proc.communicate()
+                size_st = proc.communicate()[0]
                 print(size_st, stdin_file)
                 width, height = [int(s.decode()) for s in size_st.split(b" ")]
                 with open(bico_path, "w") as bico:
@@ -155,14 +202,14 @@ try:
                 log.write(f"[curs.py] Got char {ch!r}\n")
                 log.flush()
                 with open(bico_path, "w") as bico:
-                    bico.write(str(ord(ch)))
+                    bico.write(str(ch.to_num()))
 
             if parts[0] == "readstr":
                 log.write(f"[curs.py] Sending {in_buffer!r} \n")
                 log.flush()
                 with open(bico_path, "w") as bico:
-                    bico.write(" ".join(str(int(ord(ch))) for ch in in_buffer))
-                in_buffer = ""
+                    bico.write(" ".join(str(int(ch.to_num())) for ch in in_buffer))
+                in_buffer = []
 finally:
     log.write(f"[curs.py] Resetting STDIN\n")
     termios.tcsetattr(stdin_no, termios.TCSADRAIN, initial_stdin_state)

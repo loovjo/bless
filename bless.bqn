@@ -4,6 +4,27 @@ Arr2Msg ← 1⊸↓ ∘ ∾ ∘ ((" "˙∾•Fmt)¨)
 # Inverts Arr2Msg
 Msg2Arr ← •BQN¨ ∘ ((⊢-˜+`×¬)∘(' '⊸=) ⊔ ⊢)
 
+keys ⇐ {
+    broken ⇐ ¯1
+    esc ⇐ ¯2
+    return ⇐ ¯3
+    up ⇐ ¯101
+    down ⇐ ¯102
+    left ⇐ ¯103
+    right ⇐ ¯104
+}
+
+Key2Str ⇐ {
+    F x : x > ¯1 ? @+x ;
+    F ¯1 : "BROKEN" ;
+    F ¯2 : "ESC" ;
+    F ¯3 : "RETURN" ;
+    F ¯101 : "UP" ;
+    F ¯102 : "DOWN" ;
+    F ¯103 : "LEFT" ;
+    F ¯104 : "RIGHT" ;
+    F x : "(unknown)"
+}
 
 Curses ⇐ {𝕤
     ⟨exit_status, stdout, stderr⟩ ← •SH "python3"‿"bless.py"
@@ -50,14 +71,14 @@ Curses ⇐ {𝕤
 
     # Reads one char. Blocks if no character is available.
     # Input is buffered, so if mulitple chars are typed before this function is called, only the first one will be returned, then the second one etc.
-    ReadChar ⇐ {𝕤
+    ReadKey ⇐ {𝕤
         Send "readchar_block"
-        @+•BQN Recv @
+        •BQN Recv @
     }
 
-    # Dumps the entire input buffer
-    ReadText ⇐ {𝕤
+    # Dumps the entire input buffer. Non-blocked
+    ReadKeys ⇐ {𝕤
         Send "readstr"
-        @+Msg2Arr Recv @
+        Msg2Arr Recv @
     }
 }
