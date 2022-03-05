@@ -41,6 +41,8 @@ os.mkfifo(boci)
 
 with open(log, "w") as logf:
     logf.write(f"[start.py] Started\n")
+    logf.write(f"[start.py] stdin_file = {stdin_file!r}\n")
+    logf.write(f"[start.py] stdout_file = {stdout_file!r}\n")
     logf.write(f"[start.py] temp_dir = {temp_dir!r}\n")
     logf.write(f"[start.py] boci = {boci!r}\n")
     logf.write(f"[start.py] bico = {bico!r}\n")
