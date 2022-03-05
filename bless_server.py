@@ -7,6 +7,7 @@ import termios
 import os
 import platform
 import subprocess
+import signal
 
 IS_ON_DARWIN = platform.system() == "Darwin"
 
@@ -44,13 +45,20 @@ initial_stdin_state = termios.tcgetattr(stdin_no)
 
 
 def read_ch() -> Optional[str]:
-    try:
-        ch = os.read(stdin_no, 1)
-        if ch == b"\r":
-            ch = b"\n"
-        return ch.decode()
-    except BlockingIOError:
-        return None
+    ch = b''
+    while True:
+        try:
+            ch += os.read(stdin_no, 1)
+            if ch == b"\r":
+                ch = b"\n"
+            if ch == b'\x1a': # CTRL-Z, suspend
+                os.kill(bqn_pid, signal.SIGSTOP)
+            try:
+                return ch.decode()
+            except UnicodeDecodeError:
+                continue
+        except BlockingIOError:
+            return None
 
 def read_ch_blocking() -> str:
     while True:
