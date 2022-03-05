@@ -5,6 +5,10 @@ import time
 import tty
 import termios
 import os
+import platform
+import subprocess
+
+IS_ON_DARWIN = platform.system() == "Darwin"
 
 _, bqn_pid_s, boci_path, bico_path, log_path, stdin_file, stdout_file = sys.argv
 bqn_pid = int(bqn_pid_s)
@@ -105,6 +109,20 @@ try:
                 tty.setraw(stdin_no)
                 tty.setcbreak(stdin_no)
                 log.write(f"[curs.py] Rawed stdin\n")
+
+            if parts[0] == "getsize":
+                if IS_ON_DARWIN: # most compliant darwin command
+                    proc = subprocess.Popen(["stty", "-f", stdin_file, "size"], stdout=subprocess.PIPE)
+                else:
+                    proc = subprocess.Popen(["stty", "-F", stdin_file, "size"], stdout=subprocess.PIPE)
+
+                size_st, _ = proc.communicate()
+                print(size_st, stdin_file)
+                width, height = [int(s.decode()) for s in size_st.split(b" ")]
+                with open(bico_path, "w") as bico:
+                    bico.write(f"{width} {height}")
+
+                log.write(f"[curs.py] Dimensions: {width}x{height}\n")
 
             if parts[0] == "readchar_block":
                 if len(in_buffer) > 0:

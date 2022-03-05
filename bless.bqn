@@ -43,6 +43,11 @@ Curses ⇐ {𝕤
         Send "puttext " ∾ (Arr2Msg x‿y)
     }
 
+    Size ⇐ {𝕤
+        Send "getsize"
+        Msg2Arr Recv @
+    }
+
     # Reads one char. Blocks if no character is available.
     # Input is buffered, so if mulitple chars are typed before this function is called, only the first one will be returned, then the second one etc.
     ReadChar ⇐ {𝕤
