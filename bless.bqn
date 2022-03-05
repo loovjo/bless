@@ -8,6 +8,7 @@ keys ⇐ {
     broken ⇐ ¯1
     esc ⇐ ¯2
     return ⇐ ¯3
+    backspace ⇐ ¯4
     up ⇐ ¯101
     down ⇐ ¯102
     left ⇐ ¯103
@@ -19,6 +20,7 @@ Key2Str ⇐ {
     F ¯1 : "BROKEN" ;
     F ¯2 : "ESC" ;
     F ¯3 : "RETURN" ;
+    F ¯4 : "BACKSPACE" ;
     F ¯101 : "UP" ;
     F ¯102 : "DOWN" ;
     F ¯103 : "LEFT" ;

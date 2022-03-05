@@ -62,6 +62,7 @@ class Special(Enum):
 
     ESCAPE = 2
     RETURN = 3
+    BACKSPACE = 4
     ARROW_UP = 101
     ARROW_DOWN = 102
     ARROW_LEFT = 103
@@ -84,6 +85,8 @@ def read_key() -> Optional[Key]:
                 return SpecialKey(Special.RETURN)
             if ch == b'\x1a': # CTRL-Z, suspend
                 os.kill(bqn_pid, signal.SIGSTOP)
+            if ch == b'\x7f': # Backspace
+                return SpecialKey(Special.BACKSPACE)
             if ch == b'\x1b': # Escape code, need to parse stuff
                 try:
                     next = os.read(stdin_no, 1)
