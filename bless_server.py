@@ -118,6 +118,11 @@ try:
                 tty.setcbreak(stdin_no)
                 log.write(f"[curs.py] Rawed stdin\n")
 
+            if parts[0] == "clear":
+                log.write(f"[curs.py] Clearing screen\n")
+                stdout.write("\x1b[2J")
+                stdout.flush()
+
             if parts[0] == "getsize":
                 if IS_ON_DARWIN: # most compliant darwin command
                     proc = subprocess.Popen(["stty", "-f", stdin_file, "size"], stdout=subprocess.PIPE)
@@ -131,6 +136,14 @@ try:
                     bico.write(f"{width} {height}")
 
                 log.write(f"[curs.py] Dimensions: {width}x{height}\n")
+
+            if parts[0] == "puttext":
+                x = int(parts[1])
+                y = int(parts[2])
+                text = "".join(map(lambda x: chr(int(x)), parts[3:]))
+                log.write(f"[curs.py] Putting text at {(x, y)}: {text!r}\n")
+                stdout.write(f"\x1b[{y+1};{x+1}H{text}")
+                stdout.flush()
 
             if parts[0] == "readchar_block":
                 if len(in_buffer) > 0:
@@ -150,19 +163,6 @@ try:
                 with open(bico_path, "w") as bico:
                     bico.write(" ".join(str(int(ord(ch))) for ch in in_buffer))
                 in_buffer = ""
-
-            if parts[0] == "clear":
-                log.write(f"[curs.py] Clearing screen\n")
-                stdout.write("\x1b[2J")
-                stdout.flush()
-
-            if parts[0] == "puttext":
-                x = int(parts[1])
-                y = int(parts[2])
-                text = "".join(map(lambda x: chr(int(x)), parts[3:]))
-                log.write(f"[curs.py] Putting text at {(x, y)}: {text!r}\n")
-                stdout.write(f"\x1b[{y+1};{x+1}H{text}")
-                stdout.flush()
 finally:
     log.write(f"[curs.py] Resetting STDIN\n")
     termios.tcsetattr(stdin_no, termios.TCSADRAIN, initial_stdin_state)
