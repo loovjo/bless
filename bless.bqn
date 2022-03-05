@@ -58,7 +58,11 @@ Curses ⇐ {𝕤
     # Clears screen
     Clear ⇐ Send⟜"clear"
 
-    PutText ⇐ {x‿y F text:
+    PutText ⇐ {
+    x‿y F ⟨⟩:
+        Send "puttext " ∾ (Arr2Msg x‿y)
+    ;
+    x‿y F text:
         Send "puttext " ∾ (Arr2Msg x‿y) ∾ " " ∾ (Arr2Msg @-˜text)
     }
 
