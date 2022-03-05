@@ -181,7 +181,7 @@ try:
 
                 size_st = proc.communicate()[0]
                 print(size_st, stdin_file)
-                width, height = [int(s.decode()) for s in size_st.split(b" ")]
+                height, width = [int(s.decode()) for s in size_st.split(b" ")]
                 with open(bico_path, "w") as bico:
                     bico.write(f"{width} {height}")
 
