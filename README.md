@@ -2,6 +2,7 @@
 
 Dependencies:
 * `python3`
+* A POSIX-like environment (should support MacOS (tested) and Linux (tested on Debian))
 
 Currently only supports running from the repo root directory, to be able to access the `bless.py` and `bless_server.py` files.
 
