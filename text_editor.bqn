@@ -1,8 +1,8 @@
 bless←•Import "bless.bqn"
 
 c ← bless.Curses@
-c.Start @
-c.Clear @
+c.Start@
+c.Clear@
 
 lines ← ⟨"line 1", "line 2", "more text", "last line"⟩
 cursor ← 0‿0
@@ -10,6 +10,9 @@ cursor ← 0‿0
 
 Redraw ← {𝕤
     c.Clear @
+    c.CursorHide@
+    c.Style "bold"
+
     ⟨w,h⟩ ← c.Size @
     {𝕩‿0 c.PutText "-"⋄𝕩‿(h-1) c.PutText "-"}¨ 1+↕(w-2)
     {0‿𝕩 c.PutText "|"⋄(w-1)‿𝕩 c.PutText "|"}¨ 1+↕(h-2)
@@ -23,11 +26,14 @@ Redraw ← {𝕤
 
     {F l‿y:
         lineNo ← (•Fmt y+1)∾" ~"
+        c.Style "bold"
         (x_offset-1+≠lineno)‿(y+1) c.PutText lineNo
+        c.Style "reset"
         6‿(y+y_offset) c.PutText l
     }˘ lines∾˘↕≠lines
 
     c.MoveCursor cursor+x_offset‿y_offset
+    c.CursorHide⁼@
 }
 
 ReAlign ← {𝕤
@@ -71,9 +77,13 @@ RunKey ← {
 # Main loop
 {𝕤
     Redraw @
+    c.Flush@
+
     k ← c.ReadKey@
 
     RunKey k
 
     𝕊⍟(k≠bless.keys.esc)@
 }@
+
+c.Stop@

@@ -46,7 +46,7 @@ Curses ⇐ {𝕤
     logf ⇐ (2=null-˜+`null)/stdout
 
     Send ← {
-        boci •FBytes 𝕩∾<@
+        boci •FBytes 𝕩∾⋈@
     }
     Recv ← {𝕤
         •FChars bico
@@ -54,6 +54,12 @@ Curses ⇐ {𝕤
 
     # Sets terminal mode to raw + cbreak
     Start ⇐ Send⟜"start"
+    Stop ⇐ {𝕤
+        Send "stop"
+        Recv @
+    }
+
+    Flush ⇐ Send⟜"flush"
 
     # Clears screen
     Clear ⇐ Send⟜"clear"
@@ -68,6 +74,38 @@ Curses ⇐ {𝕤
 
     MoveCursor ⇐ {F x‿y:
         Send "puttext " ∾ (Arr2Msg x‿y)
+    }
+
+    # Defaults to setting foreground. If 𝕨 = 1, sets background
+    Foreground ⇐ {
+    F r‿g‿b:
+        Send "style color_foreground " ∾ (Arr2Msg r‿g‿b)
+    ;
+    0 F r‿g‿b:
+        Send "style color_foreground " ∾ (Arr2Msg r‿g‿b)
+    ;
+    1 F r‿g‿b:
+        Send "style color_background " ∾ (Arr2Msg r‿g‿b)
+    }
+
+    Style ⇐ {
+    F "reset":
+        Send "style reset"
+    ;
+    F "bold":
+        Send "style bold"
+    ;
+    F "underline":
+        Send "style underline"
+    }
+
+    # Run inveres to show cursor
+    CursorHide ⇐ {
+    𝕊:
+        Send "style nocursor"
+    ;
+    𝕊⁼:
+        Send "style recursor"
     }
 
     Size ⇐ {𝕤

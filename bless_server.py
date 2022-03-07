@@ -126,8 +126,12 @@ def read_until_end() -> List[Key]:
 
 in_buffer = []
 
+unflushed_output = ""
+
+done = False
+
 try:
-    while True:
+    while not done:
         inp = read_until_end()
         in_buffer += inp
         if len(inp) > 0:
@@ -159,19 +163,27 @@ try:
         for cmd in cmds:
             log.write(f"[curs.py] Running command {cmd!r}\n")
             parts = cmd.split(" ")
-            if parts[0] == "write_bytes":
-                stdout.write("".join(map(lambda x: chr(int(x)), parts[1:])))
-                stdout.flush()
 
             if parts[0] == "start":
                 tty.setraw(stdin_no)
                 tty.setcbreak(stdin_no)
                 log.write(f"[curs.py] Rawed stdin\n")
 
+            if parts[0] == "stop":
+                log.write(f"[curs.py] Stopping\n")
+                done = True
+
+            if parts[0] == "flush":
+                stdout.write(unflushed_output)
+                unflushed_output = ""
+                stdout.flush()
+
+            if parts[0] == "write_bytes":
+                unflushed_output += "".join(map(lambda x: chr(int(x)), parts[1:]))
+
             if parts[0] == "clear":
                 log.write(f"[curs.py] Clearing screen\n")
-                stdout.write("\x1b[2J")
-                stdout.flush()
+                unflushed_output += "\x1b[2J"
 
             if parts[0] == "getsize":
                 if IS_ON_DARWIN: # most compliant darwin command
@@ -180,20 +192,46 @@ try:
                     proc = subprocess.Popen(["stty", "-F", stdin_file, "size"], stdout=subprocess.PIPE)
 
                 size_st = proc.communicate()[0]
-                print(size_st, stdin_file)
                 height, width = [int(s.decode()) for s in size_st.split(b" ")]
                 with open(bico_path, "w") as bico:
                     bico.write(f"{width} {height}")
 
                 log.write(f"[curs.py] Dimensions: {width}x{height}\n")
 
+            if parts[0] == "style":
+                ty = parts[1]
+                if ty == "reset":
+                    log.write(f"[curs.py] Resetting style\n")
+                    unflushed_output += "\x1b[0m"
+                if ty == "bold":
+                    log.write(f"[curs.py] Bolding\n")
+                    unflushed_output += "\x1b[1m"
+                if ty == "underline":
+                    log.write(f"[curs.py] Underlining\n")
+                    unflushed_output += "\x1b[4m"
+
+                if ty == "nocursor":
+                    log.write(f"[curs.py] Hiding cursor\n")
+                    unflushed_output += "\x1b[?25l"
+                if ty == "recursor":
+                    log.write(f"[curs.py] Showing cursor\n")
+                    unflushed_output += "\x1b[?25h"
+
+                if ty == "color_foreground":
+                    r, g, b = [int(c) for c in parts[2:5]]
+                    log.write(f"[curs.py] Setting foreground to ({r},{g},{b})\n")
+                    unflushed_output += "\x1b[38;2;{r};{g};{b}m"
+                if ty == "color_background":
+                    r, g, b = [int(c) for c in parts[2:5]]
+                    log.write(f"[curs.py] Setting background to ({r},{g},{b})\n")
+                    unflushed_output += "\x1b[48;2;{r};{g};{b}m"
+
             if parts[0] == "puttext":
                 x = int(parts[1])
                 y = int(parts[2])
                 text = "".join(map(lambda x: chr(int(x)), parts[3:]))
                 log.write(f"[curs.py] Putting text at {(x, y)}: {text!r}\n")
-                stdout.write(f"\x1b[{y+1};{x+1}H{text}")
-                stdout.flush()
+                unflushed_output += f"\x1b[{y+1};{x+1}H{text}"
 
             if parts[0] == "readchar_block":
                 if len(in_buffer) > 0:
@@ -216,5 +254,11 @@ try:
 finally:
     log.write(f"[curs.py] Resetting STDIN\n")
     termios.tcsetattr(stdin_no, termios.TCSADRAIN, initial_stdin_state)
+
+    log.write(f"[curs.py] Resetting STDOUT\n")
+    stdout.write("\x1b[0m\x1b[?25h")
+    stdout.flush()
+    with open(bico_path, "w") as bico:
+        bico.write("done")
 
 log.write(f"[curs.py] Done\n")
