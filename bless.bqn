@@ -77,7 +77,7 @@ Curses ⇐ {𝕤
     }
 
     # Defaults to setting foreground. If 𝕨 = 1, sets background
-    Foreground ⇐ {
+    Color ⇐ {
     F r‿g‿b:
         Send "style color_foreground " ∾ (Arr2Msg r‿g‿b)
     ;
